@@ -24,10 +24,9 @@
 #' \code{TRUE}, the function will try to define responses that can form a viable
 #' species. If \code{FALSE}, the responses will be randomly generated
 #' (may result in environmental conditions that do not co-exist).
-#' @param species.type [response approach] \code{"additive"}, \code{"multiplicative"} or \code{"mixed"}. Defines 
+#' @param species.type [response approach] \code{"additive"} or \code{"multiplicative"}. Defines 
 #' how the final probability of presence is calculated: if \code{"additive"}, responses to each
-#' variable are summed; if \code{"multiplicative"}, responses are multiplicated; if \code{"mixed"}
-#' the final probability will be a random combination of products and sums of individual responses.
+#' variable are summed; if \code{"multiplicative"}, responses are multiplicated.
 #' See \code{\link{generateSpFromFun}}
 #' @param niche.breadth [pca approach] \code{"any"}, \code{"narrow"} or \code{"wide"}. This parameter
 #' defines how tolerant is the species regarding environmental conditions by adjusting
@@ -57,6 +56,21 @@
 #' species. See \code{\link{convertToPA}}
 #' @param plot \code{TRUE} or \code{FALSE}. If \code{TRUE}, the generated virtual species will be plotted.
 #' @details
+#' This function generate random virtual species, either using a PCA approach, or using
+#' a response approach. In case of a response approach, only four response functions are
+#' currently used: gaussian, linear, logistic and quadratic functions.
+#' 
+#' Note that in case of numerouse predictor variables, the "response" approach will
+#' not work well because it will often generate contradicting response functions 
+#' (e.g., mean annual temperature optimum at degrees C and temperature of the coldest month at
+#' 10 degrees C). In these case, it is advised to use the PCA approach (by default, a PCA approach
+#' will be used if there are more than 6 predictor variables).
+#' 
+#' If \code{rescale.each.response = TRUE}, then the probability response to each
+#' variable will be normalised between 0 and 1 according to the following formula:
+#' P.rescaled = (P - min(P)) / (max(P) - min (P)). Simlarly, if \code{rescale = TRUE},
+#' the final environmental suitability will be rescaled between 0 and 1 with the same formula.
+#' 
 #' By default, the function will perform a probabilistic conversion into presence-
 #' absence, with a randomly chosen beta threshold. If you want to custmose the 
 #' conversion parameters, you have to define \bold{two} of the three following parameters:
