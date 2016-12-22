@@ -153,12 +153,12 @@ convertToPA <- function(x,
 {
   if("virtualspecies" %in% class(x))
   {
-    if(class(x$suitab.raster) == "RasterLayer")
+    if("RasterLayer" %in% class(x$suitab.raster))
     {
       sp.raster <- x$suitab.raster
     } else stop("x must be:\n- a raster layer object\nor\n- the output list from functions
                generateSpFromFun(), generateSpFromPCA() or generateRandomSp()")
-  } else if (is.raster(x))
+  } else if ("RasterLayer" %in% class(x))
   {
     sp.raster <- x
   } else stop("x must be:\n- a raster layer object\nor\n- the output list from functions
@@ -178,9 +178,14 @@ convertToPA <- function(x,
         warning("Both beta and species.prevalence were provided. beta will be
                 ignored.")
         beta <- NULL
-      } else if(beta < sp.raster@data@min | beta > sp.raster@data@max)
+      } else if(beta < sp.raster@data@min) 
       {
-        stop("beta must be in the range of your suitability raster")
+        warning("beta is lower than all values in your suitability raster. The
+                species will most likely be present everywhere")
+      } else if(beta > sp.raster@data@max)
+      {
+        warning("beta is higher than all values in your suitability raster. 
+                The species will most likely be absent everywhere")
       }
     } else if(beta == "random")
     {
@@ -201,7 +206,7 @@ convertToPA <- function(x,
       }
       } else
       {
-        stop("beta must either be 'random', a numeric value within the range of
+        stop("beta must either be 'random', a numeric value (preferably within the range of
              your data or NULL")
       }
       } else if(PA.method == "probability")
@@ -239,9 +244,14 @@ convertToPA <- function(x,
         {
           if(is.numeric(beta))
           {
-            if(beta < sp.raster@data@min | beta > sp.raster@data@max)
+            if(beta < sp.raster@data@min) 
             {
-              stop("beta must be in the range of your suitability raster")
+              warning("beta is lower than all values in your suitability raster. The
+                      species will most likely be present everywhere")
+            } else if(beta > sp.raster@data@max)
+            {
+              warning("beta is higher than all values in your suitability raster. 
+                      The species will most likely be absent everywhere")
             }
           } else if(beta == "random")
           {
@@ -249,8 +259,8 @@ convertToPA <- function(x,
                                sp.raster@data@max, length = 1000), 1)
           } else
           {
-            stop("beta must either be 'random', a numeric value within the range of
-                 your data or NULL")
+            stop("beta must either be 'random', a numeric value (preferably within the range of
+                 your data) or NULL")
           }
           }
         
@@ -439,7 +449,7 @@ convertToPA <- function(x,
           beta <- beta.test[2, 1]
         } else 
         {
-          while (all(abs(epsilon) > 0.01))
+          while (all(abs(epsilon) > 0.001))
           {
             beta <- (beta.test[which(epsilon == max(epsilon[epsilon < 0])), 1] + 
                        beta.test[which(epsilon == min(epsilon[epsilon > 0])), 1]) / 2
@@ -529,7 +539,7 @@ convertToPA <- function(x,
     x$pa.raster = PA.raster
     results <- x
     if(plot) plot(stack(results$suitab.raster, results$pa.raster), main = c("Suitability", "Presence-absence"))
-  } else if (is.raster(x))
+  } else if ("RasterLayer" %in% class(x))
   {
     if(PA.method == "threshold")
     {

@@ -99,6 +99,7 @@ quadraticFun <- function(x, a, b, c) {a * x^2 + b * x + c}
 #' @param prob a numeric value or vector. The percentage of the area under the curve between the 
 #' chosen extreme values
 #' @return a numeric value or vector resulting from the function
+#' @importFrom stats qnorm
 #' @export
 #' @author
 #' Boris Leroy \email{leroy.boris@@gmail.com}, Florian David
@@ -129,7 +130,7 @@ custnorm <- function(x, mean, diff, prob)
 #' Beta response function
 #' 
 #' @description Generation of a beta response curve (see references) according to the equation:
-#' \deqn{\frac{1}{{1 + e^{\frac{x - \beta}{\alpha}}}}}{
+#' \deqn{k * (x - p1)^{\alpha} * (p2 - x)^{\gamma}}{
 #' P = k (x - p1)^\alpha (p2 - x)^\gamma}
 #' k is automatically estimated to have a maximum value of P equal to 1.
 #' @param x a numeric value or vector. The input environmental variable.
@@ -202,25 +203,6 @@ betaFun <- function(x, p1, p2, alpha, gamma)
 #   M/(1 + exp(a + b * x)) * 1/(1 + exp(c - d * x))
 #   (1 / (1 + exp(a + b * x))) * (1 / (1 + exp(c - d * x)))
 # }
-
-
-# Functions useful for the PCA approach
-
-.f <- function(x, co) x %*% co
-
-.pca.coordinates <- function(x, pca, na.rm)
-{
-  x <- sweep(x, 2L, pca$cent, check.margin=FALSE)
-  x <- sweep(x, 2L, pca$norm, "/", check.margin=FALSE)
-  x1 <- apply(x, 1, .f, co = pca$c1[, 1])
-  x2 <- apply(x, 1, .f, co = pca$c1[, 2])
-  return(cbind(x1, x2))
-}
-
-.prob.gaussian <- function(x, means, sds)
-{
-  dnorm(x[1], mean = means[1], sd = sds[1]) * dnorm(x[2], mean = means[2], sd = sds[2])
-}
 
 
 .thermalFun <- function(Pmax, Tb, To, rho, sigma)
