@@ -14,7 +14,7 @@
 #' \code{species.type}
 #' @param species.type \code{"additive"} or \code{"multiplicative"}. Only used if \code{formula = NULL}. 
 #' Defines how the final environmental suitability is calculated: if \code{"additive"}, responses to each
-#' variable are summed; if \code{"multiplicative"}, responses are multiplicated.
+#' variable are summed; if \code{"multiplicative"}, responses are multiplied.
 #' @param rescale.each.response \code{TRUE} or \code{FALSE}. If \code{TRUE}, the individual responses to
 #' each environmental variable are rescaled between 0 and 1 (see details).
 #' @param plot \code{TRUE} or \code{FALSE}. If \code{TRUE}, the generated virtual species will be plotted.
@@ -24,7 +24,7 @@
 #' \item{\code{details}: the details and parameters used to generate the species}
 #' \item{\code{suitab.raster}: the raster containing the environmental suitability of the virtual species}
 #' }
-#' The structure of the virtualspecies object can be seen using str()
+#' The structure of the virtualspecies object can be seen using \code{str()}
 #' @seealso \code{\link{generateSpFromPCA}} to generate a virtual species with a PCA approach
 #' @details
 #' This functions proceeds into several steps:
@@ -57,8 +57,8 @@
 #' Any response function that can be applied to the environmental variables can
 #' be chosen here. Several functions are proposed in this package:
 #' \code{\link{linearFun}}, \code{\link{logisticFun}} and \code{\link{quadraticFun}}.
-#' Another classical example is the normal distribution: \code{\link[stats]{dnorm}}.
-#' Ther users can also create and use their own functions.
+#' Another classical example is the normal distribution: \code{\link[stats:Normal]{stats::dnorm()}}.
+#' Users can also create and use their own functions very easily.
 #' 
 #'   
 #' If \code{rescale.each.response = TRUE}, then the probability response to each
@@ -238,7 +238,7 @@ generateSpFromFun <- function(raster.stack, parameters,
     plot(results$suitab.raster, main = "Environmental suitability of the virtual species")
   }
   
-  class(results) <- append(class(results), "virtualspecies")
+  class(results) <- append("virtualspecies", class(results))
 
   return(results)
 }

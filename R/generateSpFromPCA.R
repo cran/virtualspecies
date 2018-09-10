@@ -50,13 +50,13 @@
 #' a fraction of the axis:
 #' \itemize{
 #' \item{\code{"any"}: the standard deviations can have values from 1\% to 50\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
-#' then sd values along this axe can range from 0.1 to 5.
+#' then sd values along this axis can range from 0.1 to 5.
 #' }
 #' \item{\code{"narrow"}: the standard deviations are limited between 1\% and 10\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
-#' then sd values along this axe can range from 0.1 to 1.
+#' then sd values along this axis can range from 0.1 to 1.
 #' }
 #' \item{\code{"wide"}: the standard deviations are limited between 10\% and 50\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
-#' then sd values along this axe can range from 1 to 5.
+#' then sd values along this axis can range from 1 to 5.
 #' }
 #' }
 #' @import raster
@@ -76,7 +76,7 @@
 #' \item{\code{suitab.raster}: the virtual species distribution, as a Raster object containing the
 #' environmental suitability}
 #' }
-#' The structure of the virtualspecies object can be seen using str()
+#' The structure of the virtualspecies object can be seen using \code{str()}
 #' @examples
 #' # Create an example stack with four environmental variables
 #' a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
@@ -293,7 +293,7 @@ generateSpFromPCA <- function(raster.stack, rescale = TRUE, niche.breadth = "any
                                  means = means,
                                  sds = sds),
                   suitab.raster = suitab.raster)
-  class(results) <- append(class(results), "virtualspecies")
+  class(results) <-  append("virtualspecies", class(results))
   return(results)
 }
 

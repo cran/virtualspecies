@@ -4,9 +4,10 @@
 \alias{generateSpFromBCA}
 \title{Generate a virtual species distribution from a Between Component Analysis of environmental variables}
 \usage{
-generateSpFromBCA(raster.stack.current, raster.stack.future, rescale = TRUE,
-  niche.breadth = "any", means = NULL, sds = NULL, bca = NULL,
-  sample.points = FALSE, nb.points = 10000, plot = TRUE)
+generateSpFromBCA(raster.stack.current, raster.stack.future,
+  rescale = TRUE, niche.breadth = "any", means = NULL, sds = NULL,
+  bca = NULL, sample.points = FALSE, nb.points = 10000,
+  plot = TRUE)
 }
 \arguments{
 \item{raster.stack.current}{a RasterStack object, in which each layer represent an environmental 
@@ -52,7 +53,7 @@ current environmental suitability}
 \item{\code{suitab.raster.future}: the virtual species distribution, as a Raster object containing the
 future environmental suitability}
 }
-The structure of the virtualspecies object can be seen using str()
+The structure of the virtualspecies object can be seen using \code{str()}
 }
 \description{
 A Between Component Analysis is similar to a PCA, except that two sets of environmental conditions 
@@ -88,13 +89,13 @@ standard deviation values. This range of values is based on
 a fraction of the axis:
 \itemize{
 \item{\code{"any"}: the standard deviations can have values from 1\% to 50\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
-then sd values along this axe can range from 0.1 to 5.
+then sd values along this axis can range from 0.1 to 5.
 }
 \item{\code{"narrow"}: the standard deviations are limited between 1\% and 10\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
-then sd values along this axe can range from 0.1 to 1.
+then sd values along this axis can range from 0.1 to 1.
 }
 \item{\code{"wide"}: the standard deviations are limited between 10\% and 50\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
-then sd values along this axe can range from 1 to 5.
+then sd values along this axis can range from 1 to 5.
 }
 }
 If a \code{bca} object is provided, the output bca object will contain the new environments coordinates along the provided bca axes.

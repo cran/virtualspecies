@@ -26,7 +26,7 @@
 #' (may result in environmental conditions that do not co-exist).
 #' @param species.type [response approach] \code{"additive"} or \code{"multiplicative"}. Defines 
 #' how the final probability of presence is calculated: if \code{"additive"}, responses to each
-#' variable are summed; if \code{"multiplicative"}, responses are multiplicated.
+#' variable are summed; if \code{"multiplicative"}, responses are multiplied.
 #' See \code{\link{generateSpFromFun}}
 #' @param niche.breadth [pca approach] \code{"any"}, \code{"narrow"} or \code{"wide"}. This parameter
 #' defines how tolerant is the species regarding environmental conditions by adjusting
@@ -51,6 +51,9 @@
 #' \code{PA.method = "probability"}. The value of \code{alpha} will
 #' shape the logistic function transforming occurrences into presence-absences.
 #' See \code{\link{logisticFun}} and examples therein for the choice of \code{alpha}
+#' @param adjust.alpha \code{TRUE} or \code{FALSE}. Only useful if 
+#' \code{rescale = FALSE}. If  \code{adjust.alpha = TRUE}, then the value of \code{alpha} will
+#' be adjusted to an appropriate value  for the range of suitabilities.  
 #' @param species.prevalence \code{NULL} or a numeric value between 0 and 1.
 #' The species prevalence is the proportion of sites actually occupied by the
 #' species. See \code{\link{convertToPA}}
@@ -60,7 +63,7 @@
 #' a response approach. In case of a response approach, only four response functions are
 #' currently used: gaussian, linear, logistic and quadratic functions.
 #' 
-#' Note that in case of numerouse predictor variables, the "response" approach will
+#' Note that in case of numerous predictor variables, the "response" approach will
 #' not work well because it will often generate contradicting response functions 
 #' (e.g., mean annual temperature optimum at degrees C and temperature of the coldest month at
 #' 10 degrees C). In these case, it is advised to use the PCA approach (by default, a PCA approach
@@ -68,11 +71,11 @@
 #' 
 #' If \code{rescale.each.response = TRUE}, then the probability response to each
 #' variable will be normalised between 0 and 1 according to the following formula:
-#' P.rescaled = (P - min(P)) / (max(P) - min (P)). Simlarly, if \code{rescale = TRUE},
+#' P.rescaled = (P - min(P)) / (max(P) - min (P)). Similarly, if \code{rescale = TRUE},
 #' the final environmental suitability will be rescaled between 0 and 1 with the same formula.
 #' 
 #' By default, the function will perform a probabilistic conversion into presence-
-#' absence, with a randomly chosen beta threshold. If you want to custmose the 
+#' absence, with a randomly chosen beta threshold. If you want to customise the 
 #' conversion parameters, you have to define \bold{two} of the three following parameters:
 #' \itemize{
 #' \item{\code{beta}: the 'threshold' of the logistic function (i.e. the 
@@ -104,7 +107,7 @@
 #' \item{\code{PA.conversion}: the parameters used to convert the suitability into presence-absence}
 #' \item{\code{pa.raster}: the presence-absence map, as a Raster object containing 0 (absence) / 1 (presence) / NA}
 #' }
-#' The structure of the virtualspecies can object be seen using str()
+#' The structure of the virtualspecies can object be seen using \code{str()}
 #' @examples
 #' # Create an example stack with six environmental variables
 #' a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
@@ -141,6 +144,7 @@ generateRandomSp <- function(raster.stack,
                              nb.points = 10000,
                              PA.method = "probability",
                              alpha = -.1,
+                             adjust.alpha = TRUE,
                              beta = "random",
                              species.prevalence = NULL,
                              plot = TRUE)
@@ -176,6 +180,7 @@ generateRandomSp <- function(raster.stack,
   if(approach == "pca")
   {
     results <- generateSpFromPCA(raster.stack,
+                                 rescale = rescale,
                                  niche.breadth = niche.breadth,
                                  sample.points = sample.points, 
                                  nb.points = nb.points,
@@ -274,26 +279,51 @@ generateRandomSp <- function(raster.stack,
       valid.cells <- valid.cells * (tmp.rast > 0.05)
     }
     message(" - Calculating species suitability\n")
-    results <- generateSpFromFun(raster.stack, parameters, species.type = species.type, plot = FALSE)
+    results <- generateSpFromFun(raster.stack, 
+                                 parameters, 
+                                 rescale = rescale,
+                                 species.type = species.type, 
+                                 plot = FALSE,
+                                 rescale.each.response = rescale.each.response)
   }
   
   
   
   
   
-  if(convert.to.PA == TRUE)
-  {
+  if(convert.to.PA == TRUE) {
     message(" - Converting into Presence - Absence\n")
-    results <- convertToPA(results, 
-                           PA.method = PA.method,
-                           alpha = alpha,
-                           beta = beta,
-                           species.prevalence = species.prevalence,
-                           plot = FALSE)
     
-    if(plot) plot(stack(results$suitab.raster, results$pa.raster), main = c("Suitability", "Presence-absence"))
-  } else
-  {
+    # Need to adjust alpha to appropriate scale if rescale = FALSE
+    if(rescale == FALSE) {
+      if(adjust.alpha)
+      {
+        alpha <- diff(c(minValue(results$suitab.raster),
+                        maxValue(results$suitab.raster))) * alpha
+      }
+      results <- convertToPA(results, 
+                             PA.method = PA.method,
+                             alpha = alpha,
+                             beta = beta,
+                             species.prevalence = species.prevalence,
+                             plot = FALSE)
+    
+      if(plot) plot(stack(results$suitab.raster, 
+                          results$pa.raster), main = c("Suitability", 
+                                                       "Presence-absence"))
+    } else {
+      
+      results <- convertToPA(results, 
+                             PA.method = PA.method,
+                             alpha = alpha,
+                             beta = beta,
+                             species.prevalence = species.prevalence,
+                             plot = FALSE)
+      
+      if(plot) plot(stack(results$suitab.raster, results$pa.raster), 
+                    main = c("Suitability", "Presence-absence"))
+    }
+  } else {
     if(plot) plot(results$suitab.raster, main = "Suitability")
   }
   

@@ -7,7 +7,7 @@
 \description{
 This package allows generating virtual species distributions, for example
 for testing species distribution modelling protocols. For a complete tutorial, 
-see http://borisleroy.com/virtualspecies
+see borisleroy.com/virtualspecies
 }
 \details{
 The process of generating a virtual species distribution is divided into 
@@ -41,7 +41,7 @@ illustrate the response functions as a correct input for \code{\link{generateSpF
 of the virtual species}
 \item{\code{\link{removeCollinearity}}: this function can be used to remove
 collinearity among variables of a stack by selecting a subset of 
-non-intercorrelated variables}
+non-colinear variables}
 \item{\code{\link{synchroniseNA}}: this function can be used to synchronise
 NA values among layers of a stack}
 }
@@ -53,14 +53,13 @@ This packages makes use of different other packages:
 \itemize{
 \item{This package makes extensive use of the package \code{\link{raster}} to obtain spatialised
 environmental variables, and produce spatialised virtual species distributions.}
-\item{\code{\link{dismo}} is used to sample occurrence data from the generated virtual species.}
 \item{\code{\link{ade4}} is used to generate species with a PCA approach.}
 \item{\code{\link{rworldmap}} is used to obtain free world shapefiles, in order to create
 dispersal limitations and sampling biases.}
 }
 }
 \references{
-Leroy, B. et al. 2015. virtualspecies, an R package to generate virtual species distributions. Ecography. In press.
+Leroy, B. et al. 2016. virtualspecies, an R package to generate virtual species distributions. Ecography. 39(6):599-607
 }
 \author{
 Boris Leroy \email{leroy.boris@gmail.com}
