@@ -137,6 +137,7 @@ runs may be necessary to reach the desired \code{species.prevalence}.
 }
 \examples{
 # Create an example stack with six environmental variables
+suppressWarnings(RNGversion("3.5.0"))
 a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
             nrow = 100, ncol = 100, byrow = TRUE)
 env <- stack(raster(a * dnorm(1:100, 50, sd = 25)),

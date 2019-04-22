@@ -1,4 +1,4 @@
-5f649a6a9f48b687ce9dddc97697a919 *DESCRIPTION
+abd908d9977f49ca16d6d2df12aaa38c *DESCRIPTION
 5f4101c3517305580c97031a652858e4 *NAMESPACE
 ad1b5cf846b0c8770a80a0c0aeebef7a *NEWS
 61162f5a2fc7c05d974960d0fcc7586d *R/convertToPA.R
@@ -22,7 +22,7 @@ ada378869af7d494616910936570f04b *man/betaFun.Rd
 242e89685b6baa807fe605a930d3c1a9 *man/convertToPA.Rd
 6cf68e1d6295361f4b2cc08ada59678c *man/custnorm.Rd
 4c00f7eff53e20b398a340941e359687 *man/formatFunctions.Rd
-e8a93399c767b5af97e0bc735f06bbb3 *man/generateRandomSp.Rd
+a928f21b160d5e5b33b3487d096416cb *man/generateRandomSp.Rd
 3895d9b4fe9d164c4b80bc985e97caa8 *man/generateSpFromBCA.Rd
 b981a59621c574c855cb33482241e95c *man/generateSpFromFun.Rd
 f7597b74812ed1bd1843a350c7588ab5 *man/generateSpFromPCA.Rd

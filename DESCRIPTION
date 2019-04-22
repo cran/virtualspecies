@@ -1,7 +1,7 @@
 Package: virtualspecies
 Type: Package
 Title: Generation of Virtual Species Distributions
-Version: 1.4-4
+Version: 1.4-4.1
 Date: 2018-09-10
 Author: Boris Leroy [cre, aut], Christine N. Meynard [ctb], Celine Bellard [ctb], Franck Courchamp [ctb], Robin Delsol [ctb], Willson Gaul [ctb]
 Maintainer: Boris Leroy <leroy.boris@gmail.com>
@@ -17,6 +17,6 @@ Imports: ade4, graphics, grDevices, methods, rworldmap, sp, stats,
 URL: http://borisleroy.com/virtualspecies
 RoxygenNote: 6.1.0
 NeedsCompilation: no
-Packaged: 2018-09-10 08:59:24 UTC; Farewell10
+Packaged: 2019-04-21 09:47:40 UTC; ripley
 Repository: CRAN
-Date/Publication: 2018-09-10 15:10:02 UTC
+Date/Publication: 2019-04-22 07:00:04 UTC
