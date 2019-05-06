@@ -1,7 +1,40 @@
+virtualspecies v1.5 (Release date: 2019-04-26)
+==============
+
+Changes:
+
+* MAJOR CHANGE: in function convertToPA, for probabilistic conversions, 
+the output now includes the probability of occurrence raster. This probability
+of occurrence corresponds to the environmental suitability modified by the 
+probabilistic conversion method used to draw presences and absences.
+* MAJOR CHANGE: the function convertToPA now includes a linear method for the
+probabilistic conversion. The linear conversion can be performed manually (e.g.,
+provide slope and intercept) or automatically to fit the chosen prevalence.
+* Added the function "plotSuitabilityToProba" which plots the shape of the 
+function used to transform environmental suitability into probability of 
+ocurrence.
+* Added a series of messages when running generateSpFromFun to inform users about
+the default behaviour of the function (i.e., it rescales all responses between 0 
+and 1 by default).
+* Added the possibility to extract true probability of occurrence in
+sampleOccurrences
+
+
+
+virtualspecies v1.4-5 (Release date: 2018-10-08)
+==============
+
+Changes:
+
+* Fixed several typos
+* Added occurrence type in sampleOccurrences
+* Improved print generic for sampleOccurrences outputs
+
 virtualspecies v1.4-4 (Release date: 2018-09-10)
 ==============
 
 Changes:
+
 * Modified function sampleOccurrences (more features, better output)
 * Added new generic print / str functions for sampleOccurrences outputs
 * Improvements to generateSpFromBCA()

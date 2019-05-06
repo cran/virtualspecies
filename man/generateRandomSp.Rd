@@ -101,6 +101,10 @@ The structure of the virtualspecies can object be seen using \code{str()}
 This function generates randomly a virtual species distribution.
 }
 \details{
+\href{http://borisleroy.com/virtualspecies_tutorial/05-randomspecies.html}{Online tutorial for this function}
+
+
+
 This function generate random virtual species, either using a PCA approach, or using
 a response approach. In case of a response approach, only four response functions are
 currently used: gaussian, linear, logistic and quadratic functions.
@@ -137,7 +141,6 @@ runs may be necessary to reach the desired \code{species.prevalence}.
 }
 \examples{
 # Create an example stack with six environmental variables
-suppressWarnings(RNGversion("3.5.0"))
 a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
             nrow = 100, ncol = 100, byrow = TRUE)
 env <- stack(raster(a * dnorm(1:100, 50, sd = 25)),
@@ -151,8 +154,11 @@ names(env) <- paste("Var", 1:6, sep = "")
 # More than 6 variables: by default a PCA approach will be used
 generateRandomSp(env)
 
-# Manually choosing a response approach
+# Manually choosing a response approach: this may fail because it is hard
+# to find a realistic species with six distinct responses to six variables
+\donttest{
 generateRandomSp(env, approach = "response")
+}
 
 # Randomly choosing the approach
 generateRandomSp(env, approach = "random")

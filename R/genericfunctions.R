@@ -95,9 +95,20 @@ print.virtualspecies <- function(x, ...)
     cat("\n   .Method =", x$PA.conversion["conversion.method"])
     if(x$PA.conversion["conversion.method"] == "probability")
     {
-      cat("\n   .alpha (slope)           =", x$PA.conversion["alpha"])
-      cat("\n   .beta  (inflexion point) =", x$PA.conversion["beta"])
-      cat("\n   .species prevalence      =", x$PA.conversion["species.prevalence"])
+      if(x$PA.conversion["probabilistic.method"] == "logistic")
+      {
+        cat("\n   .probabilistic method    =", x$PA.conversion["probabilistic.method"])
+        cat("\n   .alpha (slope)           =", x$PA.conversion["alpha"])
+        cat("\n   .beta  (inflexion point) =", x$PA.conversion["beta"])
+        cat("\n   .species prevalence      =", x$PA.conversion["species.prevalence"])
+      } else if(x$PA.conversion["probabilistic.method"] == "linear")
+      {
+        cat("\n   .probabilistic method    =", x$PA.conversion["probabilistic.method"])
+        cat("\n   .a (slope)               =", x$PA.conversion["a"])
+        cat("\n   .b (intercept)           =", x$PA.conversion["b"])
+        cat("\n   .species prevalence      =", x$PA.conversion["species.prevalence"])
+      }
+
     } else if(x$PA.conversion["conversion.method"] == "threshold")
     {
       cat("\n   .threshold           =", x$PA.conversion["cutoff"])
@@ -146,6 +157,12 @@ plot.virtualspecies <- function(x, ...)
 {
   y <- raster::stack(x$suitab.raster)
   names(y) <- "Suitability.raster"
+  if(!is.null(x$probability.of.occurrence))
+  {
+    y <- stack(y,
+               x$probability.of.occurrence)
+    names(y)[[nlayers(y)]] <- "Probability.of.occurrence.raster"
+  }
   if(!is.null(x$pa.raster))
   {
     y <- stack(y,
@@ -174,7 +191,8 @@ print.VSSampledPoints <- function(x, ...)
   } else
   {
     cat(paste("Occurrence points sampled from a virtual species"))
-    cat(paste("\n\n- Number of points:", nrow(x$sample.points)))
+    cat(paste("\n\n- Type:", x$type))
+    cat(paste("\n- Number of points:", nrow(x$sample.points)))
     if(length(x$bias))
     {
       cat("\n- Sampling bias: ")
@@ -199,7 +217,15 @@ print.VSSampledPoints <- function(x, ...)
     cat(paste0("\n- Multiple samples can occur in a single cell: ", 
                ifelse(x$replacement, "Yes", "No")))
     cat("\n\n")
-    print(x$sample.points)
+    if(nrow(x$sample.points) > 10)
+    {
+      cat("First 10 lines: \n")
+      print(x$sample.points[1:10, ])
+      cat(paste0("... ", nrow(x$sample.points) - 10, " more lines.\n"))
+    } else
+    {
+      print(x$sample.points)
+    }
   }
 }
 

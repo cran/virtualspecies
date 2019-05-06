@@ -4,7 +4,8 @@
 \alias{sampleOccurrences}
 \title{Sample occurrences in a virtual species distribution}
 \usage{
-sampleOccurrences(x, n, type = "presence only", sampling.area = NULL,
+sampleOccurrences(x, n, type = "presence only",
+  extract.probability = FALSE, sampling.area = NULL,
   detection.probability = 1, correct.by.suitability = FALSE,
   error.probability = 0, bias = "no.bias", bias.strength = 50,
   bias.area = NULL, weights = NULL, sample.prevalence = NULL,
@@ -21,6 +22,9 @@ The raster must contain values of 0 or 1 (or NA).}
 
 \item{type}{\code{"presence only"} or \code{"presence-absence"}. The type of 
 occurrence points to sample.}
+
+\item{extract.probability}{\code{TRUE} or \code{FALSE}. If \code{TRUE}, then
+true probability at sampled locations will also be extracted}
 
 \item{sampling.area}{a character string, a \code{polygon} or an \code{extent}
 object.
@@ -74,11 +78,13 @@ where samplings can be duplicated or repeated in time.}
 occurrence points will be plotted.}
 }
 \value{
-a \code{list} with 7 elements:
+a \code{list} with 8 elements:
 \itemize{
-\item{\code{sample.points}: the data.frame containing the coordinates of 
-samples, the real presence-absences (or presence-only) and the sampled 
-presence-absences}
+\item{\code{type}: type of occurrence sampled (presence-absences or 
+presence-only)}
+\item{\code{sample.points}: data.frame containing the coordinates of 
+samples, true and sampled observations (i.e, 1, 0 or NA), and, if asked, the true
+environmental suitability in sampled locations}
 \item{\code{detection.probability}: the chosen probability of detection of
 the virtual species}
 \item{\code{error.probability}: the chosen probability to assign presence
@@ -100,6 +106,11 @@ The sampling bias can be defined manually or with a set of predefined
 biases.
 }
 \details{
+\href{http://borisleroy.com/virtualspecies_tutorial/07-sampleoccurrences.html}{Online tutorial for this function}
+
+
+
+
 \bold{How the function works:}
 
 The function randomly selects \code{n} cells in which samples occur. If a 
@@ -186,11 +197,11 @@ or if you want to define sampling biases manually, \emph{e.g.} to to create
 biases along roads. In that case you have to provide to \code{weights} a 
 raster layer in which each cell contains the probability to be sampled.
 
-#' The \code{\link{.Random.seed}} and \code{\link{RNGkind}} are stored as 
+The \code{\link{.Random.seed}} and \code{\link{RNGkind}} are stored as 
 \code{\link{attributes}} when the function is called, and can be used to 
 reproduce the results as shown in the examples (though
 it is preferable to set the seed with \code{\link{set.seed}} before calling
-\code{sampleRecords()} and to then use the same value in 
+\code{sampleOccurrences()} and to then use the same value in 
 \code{\link{set.seed}} to reproduce results later. Note that 
 reproducing the sampling will only work if the same original distribution map 
 is used.
