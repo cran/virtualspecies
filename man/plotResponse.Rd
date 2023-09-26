@@ -8,9 +8,10 @@ plotResponse(
   x,
   parameters = NULL,
   approach = NULL,
-  rescale = TRUE,
+  rescale = NULL,
   axes.to.plot = NULL,
   no.plot.reset = FALSE,
+  rescale.each.response = NULL,
   ...
 )
 }
@@ -34,6 +35,10 @@ Only useful for a PCA species.}
 
 \item{no.plot.reset}{\code{TRUE} or \code{FALSE}. If \code{FALSE}, the plot window
 will be reset to its initial state after the response has been plotted.}
+
+\item{rescale.each.response}{\code{TRUE} or \code{FALSE}. If \code{TRUE}, 
+the individual responses to
+each environmental variable are rescaled between 0 and 1.}
 
 \item{...}{further arguments to be passed to \code{plot}. See 
 \code{\link[graphics]{plot}} and \code{\link[graphics]{par}}.}
@@ -78,10 +83,10 @@ the PCA.}}
 # Create an example stack with four environmental variables
 a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
             nrow = 100, ncol = 100, byrow = TRUE)
-env <- stack(raster(a * dnorm(1:100, 50, sd = 25)),
-             raster(a * 1:100),
-             raster(a * logisticFun(1:100, alpha = 10, beta = 70)),
-             raster(t(a)))
+env <- c(rast(a * dnorm(1:100, 50, sd = 25)),
+         rast(a * 1:100),
+         rast(a * logisticFun(1:100, alpha = 10, beta = 70)),
+         rast(t(a)))
 names(env) <- c("var1", "var2", "var3", "var4")
 
 # Per-variable response approach:

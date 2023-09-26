@@ -23,7 +23,7 @@ sampleOccurrences(
 )
 }
 \arguments{
-\item{x}{a \code{rasterLayer} object or the output list from 
+\item{x}{a \code{SpatRaster} object or the output list from 
 \code{generateSpFromFun}, \code{generateSpFromPCA}, \code{generateRandomSp},
 \code{convertToPA}
 or  \code{limitDistribution}
@@ -117,7 +117,8 @@ The sampling bias can be defined manually or with a set of predefined
 biases.
 }
 \details{
-\href{http://borisleroy.com/virtualspecies_tutorial/07-sampleoccurrences.html}{Online tutorial for this function}
+\href{http://borisleroy.com/virtualspecies_tutorial/07-sampleoccurrences.html}{
+Online tutorial for this function}
 
 
 
@@ -181,12 +182,13 @@ regions or continents to \code{bias.area} (see examples).
 
 List of possible \code{bias.area} names:
 \itemize{
-\item{Countries: type \code{levels(getMap()@data$SOVEREIGNT)} in the 
-console}
-\item{Regions: "Africa", "Antarctica", "Asia", "Australia", "Europe", 
-"North America", "South America"}
-\item{Continents: "Africa", "Antarctica", "Australia", "Eurasia", 
-"North America", "South America"}}
+\item{Countries: type 
+\code{unique(rnaturalearth::ne_countries(returnclass ='sf')$sovereignt)} 
+in the console}
+\item{Regions: "Africa", "Antarctica", "Asia", "Oceania", "Europe", 
+"Americas"}
+\item{Continents: "Africa", "Antarctica", "Asia", "Europe", 
+"North America", "Oceania", "South America"}}
 }
 \item{a polygon:
 
@@ -230,12 +232,12 @@ bias.
 # Create an example stack with six environmental variables
 a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
             nrow = 100, ncol = 100, byrow = TRUE)
-env <- stack(raster(a * dnorm(1:100, 50, sd = 25)),
-             raster(a * 1:100),
-             raster(a * logisticFun(1:100, alpha = 10, beta = 70)),
-             raster(t(a)),
-             raster(exp(a)),
-             raster(log(a)))
+env <- c(rast(a * dnorm(1:100, 50, sd = 25)),
+         rast(a * 1:100),
+         rast(a * logisticFun(1:100, alpha = 10, beta = 70)),
+         rast(t(a)),
+         rast(exp(a)),
+         rast(log(a)))
 names(env) <- paste("Var", 1:6, sep = "")   
 
 # More than 6 variables: by default a PCA approach will be used
@@ -263,7 +265,7 @@ sampleOccurrences(sp, n = 30, type = "presence-absence",
                   error.probability = 0.5)
                   
 # Introducing a sampling bias (oversampling)
-biased.area <- extent(0.5, 0.7, 0.6, 0.8)
+biased.area <- ext(1, 50, 1, 50)
 sampleOccurrences(sp, n = 50, type = "presence-absence", 
                   bias = "extent",
                   bias.area = biased.area)
@@ -271,7 +273,7 @@ sampleOccurrences(sp, n = 50, type = "presence-absence",
 plot(biased.area, add = TRUE)     
 
 # Introducing a sampling bias (no sampling at all in the chosen area)
-biased.area <- extent(0.5, 0.7, 0.6, 0.8)
+biased.area <- ext(1, 50, 1, 50)
 sampleOccurrences(sp, n = 50, type = "presence-absence", 
                   bias = "extent",
                   bias.strength = 0,

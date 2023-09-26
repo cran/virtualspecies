@@ -19,6 +19,9 @@
 #' Only useful for a PCA species.
 #' @param no.plot.reset \code{TRUE} or \code{FALSE}. If \code{FALSE}, the plot window
 #' will be reset to its initial state after the response has been plotted. 
+#' @param rescale.each.response \code{TRUE} or \code{FALSE}. If \code{TRUE}, 
+#' the individual responses to
+#' each environmental variable are rescaled between 0 and 1.
 #' @param ... further arguments to be passed to \code{plot}. See 
 #' \code{\link[graphics]{plot}} and \code{\link[graphics]{par}}.
 #' @details
@@ -51,12 +54,7 @@
 #' }
 #' }
 #' @export
-#' @import raster
-#' @importFrom grDevices grey heat.colors
-#' @importFrom graphics par mtext polygon segments legend strwidth strheight rect arrows
-#' @importFrom methods is 
-#' @importFrom stats dnorm
-#' @importFrom utils modifyList
+#' @import terra
 #' @author
 #' Boris Leroy \email{leroy.boris@@gmail.com}
 #' 
@@ -65,10 +63,10 @@
 #' # Create an example stack with four environmental variables
 #' a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
 #'             nrow = 100, ncol = 100, byrow = TRUE)
-#' env <- stack(raster(a * dnorm(1:100, 50, sd = 25)),
-#'              raster(a * 1:100),
-#'              raster(a * logisticFun(1:100, alpha = 10, beta = 70)),
-#'              raster(t(a)))
+#' env <- c(rast(a * dnorm(1:100, 50, sd = 25)),
+#'          rast(a * 1:100),
+#'          rast(a * logisticFun(1:100, alpha = 10, beta = 70)),
+#'          rast(t(a)))
 #' names(env) <- c("var1", "var2", "var3", "var4")
 #' 
 #' # Per-variable response approach:
@@ -88,23 +86,28 @@
 #' plotResponse(sp2)
 #' 
 
-plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
-                         axes.to.plot = NULL, no.plot.reset = FALSE, ...)
+plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = NULL,
+                         axes.to.plot = NULL, no.plot.reset = FALSE, 
+                         rescale.each.response = NULL, ...)
 {
-  if(is(x, "Raster")) 
+  if(inherits(x, "Raster")) {
+    x <- rast(x)
+  }
+  if(inherits(x, "SpatRaster")) 
   {
-    if(any(is.na(maxValue(x, warn = FALSE))))
-    {
-      x <- setMinMax(x)
+    # if(any(is.na(maxValue(x, warn = FALSE))))
+    # {
+    #   x <- setMinMax(x)
+    # }
+    if (length(approach) > 1) {
+      stop("Only one approach can be plotted at a time")
     }
-    if (length(approach) > 1) {stop("Only one approach can be plotted at a time")}
-    if (approach == "response")
-    {
+    if (approach == "response") {
       if (!is.list(parameters))
       {
         stop("If you choose the response approach please provide the parameters")
       }
-      if(nlayers(x) != length(parameters)) 
+      if(nlyr(x) != length(parameters)) 
       {
         stop("Provide as many layers in x as functions on parameters")
       }
@@ -114,10 +117,24 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
       }
       for (var in names(x))
       {
-        parameters[[var]]$min <- x[[var]]@data@min
-        parameters[[var]]$max <- x[[var]]@data@max
+        parameters[[var]]$min <- global(x[[var]], "min", na.rm = TRUE)[1, 1]
+        parameters[[var]]$max <- global(x[[var]], "max", na.rm = TRUE)[1, 1]
       }
-      parameters
+      if(!is.null(rescale.each.response)){
+        if(rescale.each.response) {
+          rescale <- TRUE
+        } else if (!rescale.each.response) {
+          rescale <- FALSE
+        } else {
+          stop("rescale.each.response must be TRUE or FALSE")
+        }
+      } else {
+        message("No default value was defined for rescale.each.response, ",
+                "setting rescale.each.response = TRUE")
+        rescale <- TRUE # We use rescale for the rest of the code 
+        # but it corresponds to rescale.each.response here
+      }
+      
     } else if (approach == "pca")
     {
       if(any(!(parameters$variables %in% names(x))))
@@ -136,9 +153,14 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
            If you don't know how to provide these, try to first run generateSpFromPCA() 
            to responsePlot()")
       }
+      if(is.null(rescale)) {
+        rescale <- TRUE
+        message("Argument rescale was not specified, so it was automatically ",
+                "defined to TRUE. Verify that this is what you want.")
+      } 
       details <- parameters
-    } else if (approach == "bca")
-      {
+    } else 
+      if (approach == "bca") {
       if(any(!(parameters$variables %in% names(x))))
       {
         stop("The BCA does not seem to have been computed with the same variables
@@ -163,24 +185,43 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
              to responsePlot()")
       }
       details <- parameters
-    }
-    else if (is.null(approach))
+    } else if (is.null(approach))
     {
       stop("Please choose the approach: 'response' or 'pca'.")
     }
-  } else if ("virtualspecies" %in% class(x))
+    if(!is.null(rescale.each.response)){
+      if(rescale.each.response) {
+        rescale <- TRUE
+      } else if (!rescale.each.response) {
+        rescale <- FALSE
+      } else {
+        stop("rescale.each.response must be TRUE or FALSE")
+      }
+    } else {
+      message("No default value was defined for rescale.each.response, ",
+              "setting rescale.each.response = TRUE")
+      rescale <- TRUE # We use rescale for the rest of the code 
+      # but it corresponds to rescale.each.response here
+    }
+  } else if (inherits(x, "virtualspecies"))
   {
     if (any(!(c("approach", "details", "suitab.raster") %in% names(x)))) 
     {
       if(!length(grep("suitab.raster", names(x))))
       {
       stop("x does not seem to be a valid object:
-                Either provide an output from functions	generateSpFromFun(), generateSpFromPCA(), generateSpFromBCA() or generateRandomSp() or a raster object")
+                Either provide an output from functions	generateSpFromFun(),", 
+           " generateSpFromPCA(), generateSpFromBCA() or generateRandomSp() or", 
+           " a raster object")
       }
     }
     approach <- x$approach
     details <- x$details
-    rescale <- details$rescale.each.response
+    if (x$approach == "response") {
+      rescale <- details$rescale.each.response
+    } else if (x$approach == "pca") {
+      rescale <- details$rescale
+    }
     if("parameters" %in% names(details))
     {
       parameters <- x$details$parameters
@@ -200,10 +241,10 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
     if (prod(mfrow) < length(parameters)) {mfrow[1] <- mfrow[1] + 1}
     if(!no.plot.reset)
     {
-      op <- par(no.readonly = TRUE)
+      op <- graphics::par(no.readonly = TRUE)
     }
-    par(mfrow = mfrow,
-        mar = c(4.1, 4.1, 0.1, 0.1))
+    graphics::par(mfrow = mfrow,
+                  mar = c(4.1, 4.1, 0.1, 0.1))
     for(i in names(parameters))
     {
       cur.seq <- seq(parameters[[i]]$min,
@@ -211,32 +252,36 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
                      length = 1000)
       if(rescale)
       {
-        values <- do.call(match.fun(parameters[[i]]$fun), args = c(list(cur.seq), parameters[[i]]$args))
+        values <- do.call(match.fun(parameters[[i]]$fun), 
+                          args = c(list(cur.seq), parameters[[i]]$args))
+
         values <- (values - min(values)) / (max(values) - min(values))
+         
         # Formating plotting arguments
         defaults <- list(x = cur.seq, y = values, type = "l", bty = "l",
                          cex.axis = .7, ylab = "Suitability", xlab = "",
                          las = 1, cex = .5, cex.lab = 1)
-        args <- modifyList(defaults, list( ...))
+        args <- utils::modifyList(defaults, list( ...))
         do.call("plot", args)
-        mtext(side = 1, text = i, line = 2, cex = args$cex.lab)
+        graphics::mtext(side = 1, text = i, line = 2, cex = args$cex.lab)
       } else
       {
-        values <- do.call(match.fun(parameters[[i]]$fun), args = c(list(cur.seq), parameters[[i]]$args))
+        values <- do.call(match.fun(parameters[[i]]$fun), 
+                          args = c(list(cur.seq), parameters[[i]]$args))
         # Formating plotting arguments
         defaults <- list(x = cur.seq, 
                          y = values,
                          type = "l", bty = "l",
                          cex.axis = .7, ylab = "Suitability", xlab = "",
                          las = 1, cex = .5, cex.lab = 1)
-        args <- modifyList(defaults, list( ...))
+        args <- utils::modifyList(defaults, list( ...))
         do.call("plot", args)
-        mtext(side = 1, text = i, line = 2, cex = args$cex.lab)
+        graphics::mtext(side = 1, text = i, line = 2, cex = args$cex.lab)
       }
     }    
     if(!no.plot.reset)
     {
-      par(op)
+      graphics::par(op)
     }
   } else if (approach == "pca")
   {
@@ -255,7 +300,11 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
     means <- details$means
     sds <- details$sds
     probabilities <- apply(pca.object$li[, axes], 1, .prob.gaussian, means = means, sds = sds)
-    probabilities <- (probabilities - min(probabilities)) / (max(probabilities) - min(probabilities))
+    if(rescale) {
+      probabilities <- (probabilities - details$min_prob_rescale) /
+        (details$max_prob_rescale - details$min_prob_rescale)
+    }
+
     
     xmin <- min(pca.object$li[, axes.to.plot[1]]) - 0.3 * diff(range(pca.object$li[, axes.to.plot[1]]))
     xmax <- max(pca.object$li[, axes.to.plot[1]])
@@ -264,47 +313,55 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
     
     if(!no.plot.reset)
     {
-      op <- par(no.readonly = TRUE)
+      op <- graphics::par(no.readonly = TRUE)
     }
-    par(mar = c(4.1, 4.1, 4.1, 4.6))
+    graphics::par(mar = c(4.1, 4.1, 4.1, 4.6))
     defaults <- list(x = pca.object$li[, axes.to.plot],
-                     col = c(grey(.8), rev(heat.colors(150))[51:200])[match(round(probabilities * 100, 0), 0:100)],
+                     col = c(grDevices::grey(.8), rev(viridis::inferno(150)))[
+                       match(round(probabilities * 100, 0), 0:100)],
                      xlim = c(xmin, xmax),
                      ylim = c(ymin, ymax),
                      main = paste0("PCA of environmental conditions\nAxes ", 
                                    paste0(axes.to.plot, collapse = " & "), 
-                                   " (", length(axes), " axes included in total)"),
+                                   " (", length(axes),
+                                   " axes included in total)"),
                      bty = "n",
                      las = 1, cex.axis = .7, pch = 16)
-    args <- modifyList(defaults, list(...))
+    args <- utils::modifyList(defaults, list(...))
     do.call("plot", defaults)
     
     i1 <- which(axes == axes.to.plot[1])
     i2 <- which(axes == axes.to.plot[2])
     
-    polygon(sqrt((sds[i1] * cos(seq(0, 2 * pi, length = 100)))^2 + (sds[i2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
-              cos(atan2(sds[i2] * sin(seq(0, 2 * pi, length = 100)), 
-                        sds[i1] * cos(seq(0, 2 * pi, length = 100)))) + means[i1],
-            sqrt((sds[i1] * cos(seq(0, 2 * pi, length = 100)))^2 + (sds[i2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
-              sin(atan2(sds[i2] * sin(seq(0, 2 * pi, length = 100)), 
-                        sds[i1] * cos(seq(0, 2 * pi, length = 100)))) + means[i2],
-            col = NA, lty = 1, lwd = 1, border = NULL)
+    graphics::polygon(
+      sqrt((sds[i1] * cos(seq(0, 2 * pi, length = 100)))^2 +
+             (sds[i2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
+        cos(atan2(sds[i2] * sin(seq(0, 2 * pi, length = 100)), 
+                  sds[i1] * cos(seq(0, 2 * pi, length = 100)))) + means[i1],
+      sqrt((sds[i1] * cos(seq(0, 2 * pi, length = 100)))^2 +
+             (sds[i2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
+        sin(atan2(sds[i2] * sin(seq(0, 2 * pi, length = 100)), 
+                  sds[i1] * cos(seq(0, 2 * pi, length = 100)))) + means[i2],
+      col = NA, lty = 1, lwd = 1, border = NULL)
     
-    segments(x0 = means[i1] - sds[i1], x1 = means[i1] - sds[i1],
-             y0 = ymin - 2 * diff(c(ymin, ymax)), 
-             y1 = means[i2], lty = 3)
+    graphics::par(xpd = F)
+    graphics::segments(x0 = means[i1] - sds[i1], x1 = means[i1] - sds[i1],
+                       y0 = ymin - 2 * diff(c(ymin, ymax)), 
+                       y1 = means[i2], lty = 3)
     
-    segments(x0 = means[i1] + sds[i1], x1 = means[i1] + sds[i1],
-             y0 = ymin - 2 * diff(c(ymin, ymax)),
-             y1 = means[i2], lty = 3)
+    graphics::segments(x0 = means[i1] + sds[i1], x1 = means[i1] + sds[i1],
+                       y0 = ymin - 2 * diff(c(ymin, ymax)),
+                       y1 = means[i2], lty = 3)
     
-    segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
-             x1 = means[i1],
-             y0 = means[i2] - sds[i2], y1 = means[i2] - sds[i2], lty = 3)
+    graphics::segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
+                       x1 = means[i1],
+                       y0 = means[i2] - sds[i2], y1 = means[i2] - sds[i2],
+                       lty = 3)
     
-    segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
-             x1 = means[i1],
-             y0 = means[i2] + sds[i2], y1 = means[i2] + sds[i2], lty = 3)
+    graphics::segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
+                        x1 = means[i1],
+                        y0 = means[i2] + sds[i2], y1 = means[i2] + sds[i2],
+                        lty = 3)
     cutX <- diff(c(xmin, xmax)) * 2/3 + xmin
     cutY <- diff(c(ymin, ymax)) * 2/3 + ymin
     if(means[i1] <= cutX & means[i2] <= cutY)
@@ -333,7 +390,7 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
       y1 <- pca.object$co[, i2] + y0
     }
     
-    par(xpd = T)
+    graphics::par(xpd = T)
     x1y1 <- cbind(x1, y1)
     apply(x1y1, 1, FUN = function(x, a = x0, b = y0)
       {
@@ -344,39 +401,213 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
                  label = rownames(pca.object$co), clabel = 1,
                  origin = c(x0, y0))
 
-    legend(title = "Pixel\nsuitability", "topright", inset = c(-0.1, 0),
-           legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
-           pch = 16, col = c(heat.colors(150)[c(1, 21, 41, 61, 81)], grey(.8)), bty = "n")
+    graphics::legend(title = "Pixel\nsuitability", "topright", 
+                     inset = c(-0.1, 0),
+                     legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
+                     pch = 16, col = c(viridis::inferno(150)[c(1, 38, 75, 
+                                                               113, 150)],
+                                       grDevices::grey(.8)), bty = "n")
     
     
-    par(new = T)
+    graphics::par(new = T)
     
-    valY <- dnorm(seq(xmin,
-                      xmax, 
-                      length = 1000), 
-                  mean = means[i1], 
-                  sd = sds[i1])
+    valY <- stats::dnorm(seq(xmin,
+                             xmax, 
+                             length = 1000), 
+                         mean = means[i1], 
+                         sd = sds[i1])
     valY <- 0.15 * (valY - min(valY))/(max(valY) - min(valY))
     valX <- seq(xmin, 
                 xmax, 
                 length = 1000)
     
     plot(valY ~ valX,
+         col = grDevices::grey(.7),
          type = "l", bty = "n", 
          ylim = c(0, 1), 
          lty = 1,
          xlab = "", ylab = "", xaxt = "n", yaxt = "n")
-    par(new = T)
+    graphics::par(new = T)
     
     
     valY <- seq(ymin, 
                 ymax,
                 length = 1000)
-    valX <- dnorm(seq(ymin, 
-                      ymax, 
-                      length = 1000),
-                  mean = means[2],
-                  sd = sds[2])
+    valX <- stats::dnorm(seq(ymin, 
+                             ymax, 
+                             length = 1000),
+                         mean = means[2],
+                         sd = sds[2])
+    valX <- 0.15 * (valX - min(valX))/(max(valX) - min(valX))
+    plot(valX,
+         valY,
+         col = grDevices::grey(.7),
+         type = "l", bty = "n",
+         xlim = c(0, 1), 
+         lty = 1,
+         xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+    
+    if(!no.plot.reset)
+    {
+      graphics::par(op)
+    }
+  }  else if (approach == "bca") {
+    bca.object     <- details$bca
+    means          <- details$means
+    sds            <- details$sds
+    lengths        <- details$stack.lengths
+    if(!length(rescale)) {
+      rescale        <- details$rescale
+    }
+
+    
+    probabilities <- apply(bca.object$ls, 1, .prob.gaussian, means = means, 
+                           sds = sds)
+    if(rescale) {
+      probabilities <- (probabilities - details$min_prob_rescale) /
+        (details$max_prob_rescale - details$min_prob_rescale)
+    }
+    
+    xmin <- min(bca.object$ls[, 1]) - 0.3 * diff(range(bca.object$ls[, 1]))
+    xmax <- max(bca.object$ls[, 1])
+    ymin <- min(bca.object$ls[, 2]) - 0.3 * diff(range(bca.object$ls[, 2]))
+    ymax <- max(bca.object$ls[, 2])
+    
+    graphics::par(mar = c(4.1, 4.1, 4.1, 6.1))
+    
+    defaults <- list(x = bca.object$ls,
+                     #                    col = c(grey(.8), rev(heat.colors(150))[51:200]) [match(round(probabilities * 100, 0), 0:100)] ,
+                     
+                     col = c(grDevices::grey(.8), rev(viridis::inferno(150)))[
+                       match(round(probabilities * 100, 0), 0:100)],
+                     cex = .35,
+                     pch = c(rep(15, lengths[1]),
+                             rep(17, lengths[2] + 1)),
+                     
+                     # col = c( rep(grey(0.8),    lengths[1] ), 
+                     #          rep(grey(0.5) ,   lengths[2] ), 
+                     #          "white"),
+                     
+                     xlim = c(xmin, xmax), 
+                     ylim = c(ymin, ymax),
+                     main = "BCA of environmental conditions",
+                     bty = "n",
+                     las = 1, cex.axis = .7)
+
+    
+    args <- utils::modifyList(defaults, list(...))
+    do.call("plot", defaults)
+
+    
+    #points(means[2] ~ means[1], pch = 16)
+    graphics::polygon(
+      sqrt((sds[1] * cos(seq(0, 2 * pi, length = 100)))^2 + 
+             (sds[2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
+        cos(atan2(sds[2] * sin(seq(0, 2 * pi, length = 100)), 
+                  sds[1] * cos(seq(0, 2 * pi, length = 100)))) + means[1],
+      sqrt((sds[1] * cos(seq(0, 2 * pi, length = 100)))^2 + 
+             (sds[2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
+        sin(atan2(sds[2] * sin(seq(0, 2 * pi, length = 100)), 
+                  sds[1] * cos(seq(0, 2 * pi, length = 100)))) + means[2],
+      col = NA, lty = 1, lwd = 1, border = NULL)
+    
+    graphics::par(xpd = F)
+    graphics::segments(x0 = means[1] - sds[1], x1 = means[1] - sds[1],
+                       y0 = ymin - 2 * diff(c(ymin, ymax)), 
+                       y1 = means[2], lty = 3)
+    
+    graphics::segments(x0 = means[1] + sds[1], x1 = means[1] + sds[1],
+                       y0 = ymin - 2 * diff(c(ymin, ymax)),
+                       y1 = means[2], lty = 3)
+    
+    graphics::segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
+                       x1 = means[1],
+                       y0 = means[2] - sds[2], y1 = means[2] - sds[2], lty = 3)
+    
+    graphics::segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
+                       x1 = means[1],
+                       y0 = means[2] + sds[2], y1 = means[2] + sds[2], lty = 3)
+    cutX <- diff(c(xmin, xmax)) * 2/3 + xmin
+    cutY <- diff(c(ymin, ymax)) * 2/3 + ymin
+    
+    if(means[1] <= cutX & means[2] <= cutY)
+    {
+      x0 <- xmax - 0.15 * diff(c(xmin, xmax))
+      y0 <- ymax - 0.15 * diff(c(ymin, ymax))
+      x1 <- bca.object$c1[, 1] + x0
+      y1 <- bca.object$c1[, 2] + y0
+    } else if(means[1] > cutX & means[2] <= cutY)
+    {
+      x0 <- xmin + 0.25 * diff(c(xmin, xmax))
+      y0 <- ymax - 0.15 * diff(c(ymin, ymax))
+      x1 <- bca.object$c1[, 1] + x0
+      y1 <- bca.object$c1[, 2] + y0
+    } else if(means[1] <= cutX & means[2] > cutY)
+    {
+      x0 <- xmax - 0.15 * diff(c(xmin, xmax))
+      y0 <- ymin + 0.25 * diff(c(ymin, ymax))
+      x1 <- bca.object$c1[, 1] + x0
+      y1 <- bca.object$c1[, 2] + y0
+    } else if(means[1] > cutX & means[2] > cutY)
+    {
+      x0 <- xmin + 0.25 * diff(c(xmin, xmax))
+      y0 <- ymin + 0.25 * diff(c(ymin, ymax))
+      x1 <- bca.object$c1[, 1] + x0
+      y1 <- bca.object$c1[, 2] + y0
+    }
+    
+    graphics::par(xpd = T)
+    x1y1 <- cbind(x1, y1)
+    apply(x1y1, 1, FUN = function(x, a = x0, b = y0){
+      .arrows(x0 = a, y0 = b, x1 = x[1], y1 = x[2])
+    })
+    
+    .arrowLabels(x = x1, y = y1,
+                 label = rownames(bca.object$c1), clabel = 1,
+                 origin = c(x0, y0))
+    
+    
+    graphics::legend("topright", inset = c(-.4,
+                                           0),
+                     legend = c("Current\nconditions\n","Future\nconditions"),
+                     pch = c(15, 17), col = grDevices::grey(.8), bty = "n",
+                     cex = .7,
+                     xpd = TRUE)
+    
+    
+    graphics::legend("topright",
+                     inset = c(-.4,
+                               .5),
+                     legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
+                     pch = 16, col = c(viridis::inferno(150)[c(1, 38, 75, 
+                                                               113, 150)],
+                                       grDevices::grey(.8)), bty = "n",
+                     cex = .7,
+                     title = "Pixel\nsuitability",
+                     xpd = TRUE)
+    
+    
+    
+    
+    graphics::par(new = T)
+    
+    valY <- stats::dnorm(seq(xmin, xmax,length = 1000), 
+                         mean = means[1], 
+                         sd = sds[1])
+    valY <- 0.15 * (valY - min(valY))/(max(valY) - min(valY))
+    valX <- seq(xmin, xmax, length = 1000)
+    
+    plot(valY ~ valX,
+         type = "l", bty = "n", 
+         ylim = c(0, 1), 
+         lty = 1,
+         xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+    graphics::par(new = T)
+    
+    valY <- seq(ymin, ymax, length = 1000)
+    valX <- stats::dnorm(seq(ymin, ymax,length = 1000),
+                         mean = means[2],
+                         sd = sds[2])
     valX <- 0.15 * (valX - min(valX))/(max(valX) - min(valX))
     plot(valX,
          valY,
@@ -385,142 +616,11 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
          lty = 1,
          xlab = "", ylab = "", xaxt = "n", yaxt = "n")
     
-    if(!no.plot.reset)
-    {
-      par(op)
-    }
-    }  else if (approach == "bca"){
-      bca.object     <- details$bca
-      means          <- details$means
-      sds            <- details$sds
-      lengths        <- details$stack.lengths
-      
-      probabilities <- apply(bca.object$ls, 1, .prob.gaussian, means = means, sds = sds)
-      probabilities <- (probabilities - min(probabilities)) / (max(probabilities) - min(probabilities))
-      
-      xmin <- min(bca.object$ls[, 1]) - 0.3 * diff(range(bca.object$ls[, 1]))
-      xmax <- max(bca.object$ls[, 1])
-      ymin <- min(bca.object$ls[, 2]) - 0.3 * diff(range(bca.object$ls[, 2]))
-      ymax <- max(bca.object$ls[, 2])
-      
-      par(mar = c(4.1, 4.1, 4.1, 4.6))
-      
-      defaults <- list(x = bca.object$ls,
-                       #                    col = c(grey(.8), rev(heat.colors(150))[51:200]) [match(round(probabilities * 100, 0), 0:100)] ,
-                       col = c( rep(grey(0.8),    lengths[1] ), 
-                                rep(grey(0.5) ,   lengths[2] ), 
-                                "white"),
-                       
-                       xlim = c(xmin, xmax), 
-                       ylim = c(ymin, ymax),
-                       main = "BCA of environmental conditions",
-                       bty = "n",
-                       las = 1, cex.axis = .7, pch = 16)
-      
-      
-      args <- modifyList(defaults, list(...))
-      do.call("plot", defaults)
-      
-      #points(means[2] ~ means[1], pch = 16)
-      polygon(sqrt((sds[1] * cos(seq(0, 2 * pi, length = 100)))^2 + (sds[2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
-                cos(atan2(sds[2] * sin(seq(0, 2 * pi, length = 100)), 
-                          sds[1] * cos(seq(0, 2 * pi, length = 100)))) + means[1],
-              sqrt((sds[1] * cos(seq(0, 2 * pi, length = 100)))^2 + (sds[2] * sin(seq(0, 2 * pi, length = 100)))^2) * 
-                sin(atan2(sds[2] * sin(seq(0, 2 * pi, length = 100)), 
-                          sds[1] * cos(seq(0, 2 * pi, length = 100)))) + means[2],
-              col = NA, lty = 1, lwd = 1, border = NULL)
-      
-      segments(x0 = means[1] - sds[1], x1 = means[1] - sds[1],
-               y0 = ymin - 2 * diff(c(ymin, ymax)), 
-               y1 = means[2], lty = 3)
-      
-      segments(x0 = means[1] + sds[1], x1 = means[1] + sds[1],
-               y0 = ymin - 2 * diff(c(ymin, ymax)),
-               y1 = means[2], lty = 3)
-      
-      segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
-               x1 = means[1],
-               y0 = means[2] - sds[2], y1 = means[2] - sds[2], lty = 3)
-      
-      segments(x0 = xmin - 2 * diff(c(xmin, xmax)), 
-               x1 = means[1],
-               y0 = means[2] + sds[2], y1 = means[2] + sds[2], lty = 3)
-      cutX <- diff(c(xmin, xmax)) * 2/3 + xmin
-      cutY <- diff(c(ymin, ymax)) * 2/3 + ymin
-      
-      if(means[1] <= cutX & means[2] <= cutY)
-      {
-        x0 <- xmax - 0.15 * diff(c(xmin, xmax))
-        y0 <- ymax - 0.15 * diff(c(ymin, ymax))
-        x1 <- bca.object$c1[, 1] + x0
-        y1 <- bca.object$c1[, 2] + y0
-      } else if(means[1] > cutX & means[2] <= cutY)
-      {
-        x0 <- xmin + 0.25 * diff(c(xmin, xmax))
-        y0 <- ymax - 0.15 * diff(c(ymin, ymax))
-        x1 <- bca.object$c1[, 1] + x0
-        y1 <- bca.object$c1[, 2] + y0
-      } else if(means[1] <= cutX & means[2] > cutY)
-      {
-        x0 <- xmax - 0.15 * diff(c(xmin, xmax))
-        y0 <- ymin + 0.25 * diff(c(ymin, ymax))
-        x1 <- bca.object$c1[, 1] + x0
-        y1 <- bca.object$c1[, 2] + y0
-      } else if(means[1] > cutX & means[2] > cutY)
-      {
-        x0 <- xmin + 0.25 * diff(c(xmin, xmax))
-        y0 <- ymin + 0.25 * diff(c(ymin, ymax))
-        x1 <- bca.object$c1[, 1] + x0
-        y1 <- bca.object$c1[, 2] + y0
-      }
-      
-      par(xpd = T)
-      x1y1 <- cbind(x1, y1)
-      apply(x1y1, 1, FUN = function(x, a = x0, b = y0){
-        .arrows(x0 = a, y0 = b, x1 = x[1], y1 = x[2])
-      })
-      
-      .arrowLabels(x = x1, y = y1,
-                   label = rownames(bca.object$c1), clabel = 1,
-                   origin = c(x0, y0))
-      
-      legend("topright", inset = c(-0.1, 0),
-             legend = c("Current conditions","Future conditions"),
-             pch = 16, col = c(grey(.8),grey(0.5)), bty = "n")
-      
-      
-      par(new = T)
-      
-      valY <- dnorm(seq(xmin, xmax,length = 1000), 
-                    mean = means[1], 
-                    sd = sds[1])
-      valY <- 0.15 * (valY - min(valY))/(max(valY) - min(valY))
-      valX <- seq(xmin, xmax, length = 1000)
-      
-      plot(valY ~ valX,
-           type = "l", bty = "n", 
-           ylim = c(0, 1), 
-           lty = 1,
-           xlab = "", ylab = "", xaxt = "n", yaxt = "n")
-      par(new = T)
-      
-      valY <- seq(ymin, ymax, length = 1000)
-      valX <- dnorm(seq(ymin, ymax,length = 1000),
-                    mean = means[2],
-                    sd = sds[2])
-      valX <- 0.15 * (valX - min(valX))/(max(valX) - min(valX))
-      plot(valX,
-           valY,
-           type = "l", bty = "n",
-           xlim = c(0, 1), 
-           lty = 1,
-           xlab = "", ylab = "", xaxt = "n", yaxt = "n")
-      
-      
-    } else 
-    {
-      stop("The argument approach was not valid, please provide either 'response' or 'pca'")
-    }
+    
+  } else 
+  {
+    stop("The argument approach was not valid, please provide either 'response' or 'pca'")
+  }
 }
 
 
@@ -531,14 +631,14 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
   d0 <- sqrt((x0 - x1)^2 + (y0 - y1)^2)
   if (d0 < 1e-07) 
     return(invisible())
-  segments(x0, y0, x1, y1, lty = lty)
-  h <- strheight("A", cex = par("cex"))
+  graphics::segments(x0, y0, x1, y1, lty = lty)
+  h <- graphics::strheight("A", cex = graphics::par("cex"))
   if (d0 > 2 * h) {
     x0 <- x1 - h * (x1 - x0)/d0
     y0 <- y1 - h * (y1 - y0)/d0
     if (edge) 
-      arrows(x0, y0, x1, y1, angle = ang, length = len, 
-             lty = 1)
+      graphics::arrows(x0, y0, x1, y1, angle = ang, length = len, 
+                       lty = 1)
   }
 }
 
@@ -550,9 +650,9 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
   for (i in 1:(length(x))) {
     cha <- as.character(label[i])
     cha <- paste(" ", cha, " ", sep = "")
-    cex0 <- par("cex") * clabel
-    xh <- strwidth(cha, cex = cex0)
-    yh <- strheight(cha, cex = cex0) * 5/6
+    cex0 <- graphics::par("cex") * clabel
+    xh <- graphics::strwidth(cha, cex = cex0)
+    yh <- graphics::strheight(cha, cex = cex0) * 5/6
     if ((xref[i] > yref[i]) & (xref[i] > -yref[i])) {
       x1 <- x[i] + xh/2
       y1 <- y[i]
@@ -570,8 +670,8 @@ plotResponse <- function(x, parameters = NULL, approach = NULL, rescale = TRUE,
       y1 <- y[i] + yh
     }
     if (boxes) {
-      rect(x1 - xh/2, y1 - yh, x1 + xh/2, y1 + yh, col = "white", 
-           border = 1)
+      graphics::rect(x1 - xh/2, y1 - yh, x1 + xh/2, y1 + yh, col = "white", 
+                     border = 1)
     }
     text(x1, y1, cha, cex = cex0)
   }

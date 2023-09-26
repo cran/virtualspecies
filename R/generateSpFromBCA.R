@@ -1,19 +1,27 @@
-#' Generate a virtual species distribution from a Between Component Analysis of environmental variables
+#' Generate a virtual species distribution from a Between Component Analysis 
+#' of environmental variables
 #' 
 #' 
-#' A Between Component Analysis is similar to a PCA, except that two sets of environmental conditions 
-#' (e.g. current and future) will be used. This function is useful to generate species in 
-#' no-analogue climates.
+#' A Between Component Analysis is similar to a PCA, except that two sets of 
+#' environmental conditions 
+#' (e.g. current and future) will be used. This function is useful to generate 
+#' species designed to test the extrapolation capacity of models, e.g.  
+#' for climate change extrapolations
 #' 
 #' 
-#' @param raster.stack.current a RasterStack object, in which each layer represent an environmental 
+#' @param raster.stack.current a SpatRaster object, in which each layer 
+#' represent an environmental 
 #' variable from the "current" time horizon.
-#' @param raster.stack.future a RasterStack object, in which each layer represent an environmental 
+#' @param raster.stack.future a SpatRaster object, in which each layer 
+#' represent an environmental 
 #' variable from a "future" time horizon.
-#' @param rescale \code{TRUE} of \code{FALSE}. Should the output suitability raster be
+#' @param rescale \code{TRUE} of \code{FALSE}. Should the output suitability 
+#' raster be
 #' rescaled between 0 and 1?
-#' @param niche.breadth \code{"any"}, \code{"narrow"} or \code{"wide"}. This parameter
-#' defines how tolerant is the species regarding environmental conditions by adjusting
+#' @param niche.breadth \code{"any"}, \code{"narrow"} or \code{"wide"}. This
+#'  parameter
+#' defines how tolerant is the species regarding environmental conditions by 
+#' adjusting
 #' the standard deviations of the gaussian functions. See details.
 #' @param means a vector containing two numeric values. Will be used to define
 #' the means of the gaussian response functions to the axes of the BCA.
@@ -21,82 +29,99 @@
 #' the standard deviations of the gaussian response functions to the axes of 
 #' the BCA.
 #' @param bca a \code{bca} object. You can provide a bca object that you 
-#' already computed yourself with \code{\link[virtualspecies]{generateSpFromBCA}}
+#' already computed yourself with 
+#' \code{\link[virtualspecies]{generateSpFromBCA}}
 #' @param sample.points \code{TRUE} of \code{FALSE}. If you have large
 #' raster files then use this parameter to sample a number of points equal to
-#' \code{nb.points}. However the representation of your environmental variables will not be complete.
+#' \code{nb.points}. However the representation of your environmental variables
+#'  will not be complete.
 #' @param nb.points a numeric value. Only useful if \code{sample.points = TRUE}.
 #' The number of sampled points from the raster, to perform the PCA. A too small
-#' value may not be representative of the environmental conditions in your rasters.
-#' @param plot \code{TRUE} or \code{FALSE}. If \code{TRUE}, the generated virtual species will be plotted.
+#' value may not be representative of the environmental conditions in your 
+#' rasters.
+#' @param plot \code{TRUE} or \code{FALSE}. If \code{TRUE}, the generated 
+#' virtual species will be plotted.
 #' @note
 #' To perform the BCA, the function has to transform rasters into matrices.
-#' This may not be feasible if the chosen rasters are too large for the computer's memory.
+#' This may not be feasible if the chosen rasters are too large for the 
+#' computer's memory.
 #' In this case, you should run the function with \code{sample.points = TRUE} 
 #' and set the number of points to sample with \code{nb.points}.
 #' @details
 #' This function generates a virtual species distribution by computing a Between
 #' Component Analysis based on two different stacks of environmental variables.
-#' The response of the species is then simulated along the two first axes of the BCA with gaussian functions in the
+#' The response of the species is then simulated along the two first axes of 
+#' the BCA with gaussian functions in the
 #' same way as in \code{\link{generateSpFromPCA}}.
 #' 
-#' A Between Component Analysis is used to separate two sets of environmental conditions.
+#' A Between Component Analysis is used to separate two sets of environmental 
+#' conditions.
 #' This function proceeds in 4 steps:
 #' \enumerate{
-#' \item{A Principal Component Analysis is generated based on both set of environmental conditions}
-#' \item{A BCA of this PCA is generated using the function \code{\link[ade4:bca]{bca}}
+#' \item{A Principal Component Analysis is generated based on both set of 
+#' environmental conditions}
+#' \item{A BCA of this PCA is generated using the function 
+#' \code{\link[ade4:bca]{bca}}
 #' from package \code{ade4}. Note that at this step we choose  one random point
 #' from \code{raster.stack.future},
 #' and we use this single point as if it was a third set of environmental
-#' conditions for the BCA. This trick allows us to subtly change the shape of the bca in order to
+#' conditions for the BCA. This trick allows us to subtly change the shape of 
+#' the bca in order to
 #' generate different types of conditions.}
 #' \item{Gaussian responses to the first two axes are computed}
-#' \item{These responses are multiplied to obtain the final environmental suitability}}
+#' \item{These responses are multiplied to obtain the final environmental 
+#' suitability}}
 #' 
-#' If \code{rescale = TRUE}, the final environmental suitability is rescaled between 0 and 1,
+#' If \code{rescale = TRUE}, the final environmental suitability is rescaled 
+#' between 0 and 1,
 #' with the formula (val - min) / (max - min).
 #' 
-#' The shape of gaussian responses can be randomly generated by the function or defined manually by choosing
+#' The shape of gaussian responses can be randomly generated by the function 
+#' or defined manually by choosing
 #' \code{means} and \code{sds}. The random generation is constrained
 #' by the argument \code{niche.breadth}, which controls the range of possible 
 #' standard deviation values. This range of values is based on
 #' a fraction of the axis:
 #' \itemize{
-#' \item{\code{"any"}: the standard deviations can have values from 1\% to 50\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
+#' \item{\code{"any"}: the standard deviations can have values from 1\% to 
+#' 50\% of axes' ranges. For example if the first axis of the PCA ranges from 
+#' -5 to +5,
 #' then sd values along this axis can range from 0.1 to 5.
 #' }
-#' \item{\code{"narrow"}: the standard deviations are limited between 1\% and 10\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
+#' \item{\code{"narrow"}: the standard deviations are limited between 1\% and 
+#' 10\% of axes' ranges. For example if the first axis of the PCA ranges from 
+#' -5 to +5,
 #' then sd values along this axis can range from 0.1 to 1.
 #' }
-#' \item{\code{"wide"}: the standard deviations are limited between 10\% and 50\% of axes' ranges. For example if the first axis of the PCA ranges from -5 to +5,
+#' \item{\code{"wide"}: the standard deviations are limited between 10\% and 
+#' 50\% of axes' ranges. For example if the first axis of the PCA ranges from 
+#' -5 to +5,
 #' then sd values along this axis can range from 1 to 5.
 #' }
 #' }
-#' If a \code{bca} object is provided, the output bca object will contain the new environments coordinates along the provided bca axes.
+#' If a \code{bca} object is provided, the output bca object will contain the 
+#' new environments coordinates along the provided bca axes.
 #' 
 #' 
 #' 
 #' 
 #' @return a \code{list} with 4 elements:
 #' \itemize{
-#' \item{\code{approach}: the approach used to generate the species, \emph{i.e.}, \code{"bca"}}
-#' \item{\code{details}: the details and parameters used to generate the species}
-#' \item{\code{suitab.raster.current}: the virtual species distribution, as a Raster object containing the
+#' \item{\code{approach}: the approach used to generate the species, 
+#' \emph{i.e.}, \code{"bca"}}
+#' \item{\code{details}: the details and parameters used to generate the 
+#' species}
+#' \item{\code{suitab.raster.current}: the virtual species distribution, as a 
+#' SpatRaster object containing the
 #' current environmental suitability}
-#' \item{\code{suitab.raster.future}: the virtual species distribution, as a Raster object containing the
+#' \item{\code{suitab.raster.future}: the virtual species distribution, as a 
+#' SpatRaster object containing the
 #' future environmental suitability}
 #' }
 #' The structure of the virtualspecies object can be seen using \code{str()}
 #' 
 #' 
-#' 
-#' 
-#' 
-#' 
-#' 
-#' @import raster
-#' @importFrom graphics layout title
-#' @importFrom grDevices terrain.colors
+#' @import terra
 #' @export
 #' 
 #' 
@@ -107,7 +132,8 @@
 #' 
 #' 
 #' @seealso \code{\link{generateSpFromFun}} to generate a virtual species with
-#' the responses to each environmental variables.\code{\link{generateSpFromPCA}} to generate a virtual species with
+#' the responses to each environmental variables.\code{\link{generateSpFromPCA}}
+#'  to generate a virtual species with
 #' the PCA of environmental variables.
 #' 
 #' 
@@ -116,20 +142,20 @@
 #' a <- matrix(rep(dnorm(1:100, 50, sd = 25)), 
 #'             nrow = 100, ncol = 100, byrow = TRUE)
 #' 
-#' env1 <- stack(raster(a * dnorm(1:100, 50, sd = 25)),
-#'               raster(a * 1:100),
-#'               raster(a),
-#'               raster(t(a)))
+#' env1 <- c(rast(a * dnorm(1:100, 50, sd = 25)),
+#'           rast(a * 1:100),
+#'           rast(a),
+#'           rast(t(a)))
 #' names(env1) <- c("var1", "var2", "var3", "var4")
 #' plot(env1) # Illustration of the variables
 #' 
 #' b <- matrix(rep(dnorm(1:100, 25, sd = 50)), 
 #'             nrow = 100, ncol = 100, byrow = TRUE)
 #' 
-#' env2 <- stack(raster(b * dnorm(1:100, 50, sd = 25)),
-#'               raster(b * 1:100),
-#'               raster(b),
-#'               raster(t(b)))
+#' env2 <- c(rast(b * dnorm(1:100, 50, sd = 25)),
+#'           rast(b * 1:100),
+#'           rast(b),
+#'           rast(t(b)))
 #' 
 #' names(env2) <- c("var1", "var2", "var3", "var4")
 #' plot(env2) # Illustration of the variables 
@@ -154,52 +180,75 @@
 #'    
 #'                    
 
-generateSpFromBCA <- function(raster.stack.current, raster.stack.future, rescale = TRUE, niche.breadth = "any",
-                              means = NULL, sds = NULL, bca = NULL,
-                              sample.points = FALSE, nb.points = 10000,
+generateSpFromBCA <- function(raster.stack.current, 
+                              raster.stack.future, 
+                              rescale = TRUE, 
+                              niche.breadth = "any",
+                              means = NULL, 
+                              sds = NULL, 
+                              bca = NULL,
+                              sample.points = FALSE, 
+                              nb.points = 10000,
                               plot = TRUE)
 {
-  
-  if(!(is(raster.stack.current, "RasterStack"))){
-    stop("raster.stack.current must be a raster stack object")
+  if(inherits(raster.stack.current, "Raster")) {
+    raster.stack.current <- rast(raster.stack.current)
   }
-  if(!(is(raster.stack.future,  "RasterStack"))){
-    stop("raster.stack.future must be a raster stack object")
+  if(inherits(raster.stack.future, "Raster")) {
+    raster.stack.future <- rast(raster.stack.future)
+  }
+  
+  if(!(inherits(raster.stack.current, "SpatRaster"))){
+    stop("raster.stack.current must be a SpatRaster object")
+  }
+  if(!(inherits(raster.stack.future, "SpatRaster"))){
+    stop("raster.stack.future must be a SpatRaster object")
   }
   if(!all((names(raster.stack.future) %in% names(raster.stack.current)))){
-    stop("The variables names in raster.stack.future must be the same as variables names in raster.stack.current")
+    stop("The variables names in raster.stack.future must be the same as ", 
+         "variables names in raster.stack.current")
   }
-  if((calc(raster.stack.current, sum) == calc(raster.stack.future, sum))@data@min==1){
+  if(global(app(raster.stack.current, sum) == app(raster.stack.future, sum), 
+            fun = sum, na.rm = TRUE) == ncell(raster.stack.current)){
     stop("Please provide two different rasters")
   }
   if(sample.points){
     if(!is.numeric(nb.points))
-    {stop("nb.points must be a numeric value corresponding to the number of pixels to sample from raster.stack.current 
-          and from raster.stack.future")}
+    {stop("nb.points must be a numeric value corresponding to the number of", 
+    " pixels to sample from raster.stack.current ", 
+    "and from raster.stack.future")}
     
-    env.df.current <- sampleRandom(raster.stack.current, size = nb.points, na.rm = TRUE)
-    env.df.future  <- sampleRandom(raster.stack.future , size = nb.points, na.rm = TRUE)
+    env.df.current <- spatSample(raster.stack.current, size = nb.points, 
+                                 na.rm = TRUE)
+    env.df.future  <- spatSample(raster.stack.future , size = nb.points,
+                                 na.rm = TRUE)
     
     } else
     {
-      if(canProcessInMemory(raster.stack.current, n = 4)){
-        env.df.current <- getValues(raster.stack.current)
-        env.df.future  <- getValues(raster.stack.future)
+      message("Reading raster values. If it fails for very large rasters, use",
+              " arguments 'sample.points = TRUE' and define a number of",
+              " points to sample with 'nb.point'.")
+      
+      # if(canProcessInMemory(raster.stack.current, n = 4)){
+        env.df.current <- values(raster.stack.current)
+        env.df.future  <- values(raster.stack.future)
         
         if(any(is.na(env.df.current)))
         {
-          env.df.current <- env.df.current[-unique(which(is.na(env.df.current), arr.ind = T)[, 1]), ] # Removing NAs 
+          env.df.current <- env.df.current[-unique(which(is.na(env.df.current), 
+                                                         arr.ind = T)[, 1]), ] 
         }
         if(any(is.na(env.df.future)))
         {
-          env.df.future <- env.df.future[-unique(which(is.na(env.df.future), arr.ind = T)[, 1]), ] # Removing NAs 
+          env.df.future <- env.df.future[-unique(which(is.na(env.df.future),
+                                                       arr.ind = T)[, 1]), ] 
         }
-      } else
-      {
-        stop("Your computer does not have enough memory to extract all the values from raster.stack.current. 
-             Use the argument sample.points = TRUE, and adjust the number of points to use with nb.points. 
-             More details in ?generateSpFromBCA")
-      }
+      # } else
+      # {
+      #   stop("Your computer does not have enough memory to extract all the values from raster.stack.current. 
+      #        Use the argument sample.points = TRUE, and adjust the number of points to use with nb.points. 
+      #        More details in ?generateSpFromBCA")
+      # }
     }
   
   if(!is.null(bca)){
@@ -246,9 +295,11 @@ generateSpFromBCA <- function(raster.stack.current, raster.stack.future, rescale
   
   if(!is.null(means)){
     if(!is.numeric(means))
-    {stop("Please provide numeric means for the gaussian function to compute probabilities of presence")}
+    {stop("Please provide numeric means for the gaussian function to compute ", 
+          "probabilities of presence")}
     if(!is.vector(means) | length(means) != 2)
-    {stop("Please provide a vector with 2 means for the gaussian function (one for each of the two between axes)")}
+    {stop("Please provide a vector with 2 means for the gaussian function ", 
+          "(one for each of the two between axes)")}
   } else
   {
     means <- between.object$ls[sample(1:nrow(between.object$ls), 1), ] #[1, ]
@@ -288,16 +339,22 @@ generateSpFromBCA <- function(raster.stack.current, raster.stack.future, rescale
     # Random sampling of parameters
     if(niche.breadth == "any")
     {
-      sds <- c(sd1 = sample(seq((axis1[2] - axis1[1])/100, (axis1[2] - axis1[1])/2, length = 1000), 1),
-               sd2 = sample(seq((axis2[2] - axis2[1])/100, (axis2[2] - axis2[1])/2, length = 1000), 1))
+      sds <- c(sd1 = sample(seq((axis1[2] - axis1[1])/100,
+                                (axis1[2] - axis1[1])/2, length = 1000), 1),
+               sd2 = sample(seq((axis2[2] - axis2[1])/100, 
+                                (axis2[2] - axis2[1])/2, length = 1000), 1))
     } else if (niche.breadth == "narrow")
     {
-      sds <- c(sd1 = sample(seq((axis1[2] - axis1[1])/100, (axis1[2] - axis1[1])/10, length = 1000), 1),
-               sd2 = sample(seq((axis2[2] - axis2[1])/100, (axis2[2] - axis2[1])/10, length = 1000), 1))
+      sds <- c(sd1 = sample(seq((axis1[2] - axis1[1])/100, 
+                                (axis1[2] - axis1[1])/10, length = 1000), 1),
+               sd2 = sample(seq((axis2[2] - axis2[1])/100, 
+                                (axis2[2] - axis2[1])/10, length = 1000), 1))
     } else if (niche.breadth == "wide")
     {
-      sds <- c(sd1 = sample(seq((axis1[2] - axis1[1])/10, (axis1[2] - axis1[1])/2, length = 1000), 1),
-               sd2 = sample(seq((axis2[2] - axis2[1])/10, (axis2[2] - axis2[1])/2, length = 1000), 1))
+      sds <- c(sd1 = sample(seq((axis1[2] - axis1[1])/10, 
+                                (axis1[2] - axis1[1])/2, length = 1000), 1),
+               sd2 = sample(seq((axis2[2] - axis2[1])/10, 
+                                (axis2[2] - axis2[1])/2, length = 1000), 1))
     } else
     {
       stop("niche.breadth must be one of these: 'any', 'narrow', 'wide")
@@ -305,68 +362,111 @@ generateSpFromBCA <- function(raster.stack.current, raster.stack.future, rescale
   }
   
   message(" - Calculating current suitability values\n")
-  rasters.env.current <- calc(raster.stack.current[[sel.vars]], fun = function(x, ...)
-  {.pca.coordinates(x, pca = between.object,  na.rm = TRUE, axes = c(1, 2))})
-  suitab.raster.current <- calc(rasters.env.current, fun = function(x, ...){.prob.gaussian(x, means = means, sds = sds)})
+  
+  rasters.env.current <- app(raster.stack.current[[sel.vars]],
+                             fun = function(x, ...) {
+                               .pca.coordinates(x, pca = between.object,  
+                                                na.rm = TRUE, axes = c(1, 2))
+                             })
+  
+  suitab.raster.current <- app(rasters.env.current, 
+                               fun = function(x, ...) {
+                                 .prob.gaussian(x, means = means, sds = sds)
+                               })
   
   message(" - Calculating future suitability values\n")
-  rasters.env.future  <- calc(raster.stack.future [[sel.vars]], fun = function(x, ...)
-  {.pca.coordinates(x, pca = between.object,  na.rm = TRUE, axes = c(1, 2))})
-  suitab.raster.future  <- calc(rasters.env.future , fun = function(x, ...){.prob.gaussian(x, means = means, sds = sds)})
+  
+  rasters.env.future  <- app(raster.stack.future[[sel.vars]],
+                             fun = function(x, ...) {
+                               .pca.coordinates(x, pca = between.object, 
+                                                na.rm = TRUE, axes = c(1, 2))
+                             })
+  suitab.raster.future  <- app(rasters.env.future , 
+                                fun = function(x, ...) {
+                                  .prob.gaussian(x, means = means, sds = sds)
+                                })
   
   if(!is.null(bca)){
-    between.env.current <- .pca.coordinates(env.df.current, pca = between.object,  na.rm = TRUE)
-    between.env.future  <- .pca.coordinates(env.df.future , pca = between.object,  na.rm = TRUE)
-    between.object$ls   <- as.data.frame( rbind(between.env.current, between.env.future) )
+    between.env.current <- .pca.coordinates(env.df.current,
+                                            pca = between.object,  na.rm = TRUE)
+    between.env.future  <- .pca.coordinates(env.df.future , 
+                                            pca = between.object,  na.rm = TRUE)
+    between.object$ls   <- as.data.frame( rbind(between.env.current, 
+                                                between.env.future) )
   }
   
-  if(rescale){
-    suitab.raster.current <- (suitab.raster.current - suitab.raster.current@data@min) / (suitab.raster.current@data@max - suitab.raster.current@data@min)
-    suitab.raster.future  <- (suitab.raster.future  - suitab.raster.future@data@min)  / (suitab.raster.future@data@max  - suitab.raster.future@data@min)
+  if(rescale)
+  {
+    max_ <- max(global(suitab.raster.current, "max", na.rm = TRUE)[1, 1],
+                global(suitab.raster.future, "max", na.rm = TRUE)[1, 1])
+    min_ <- min(global(suitab.raster.current, "min", na.rm = TRUE)[1, 1],
+                global(suitab.raster.future, "min", na.rm = TRUE)[1, 1])
+    
+    suitab.raster.current <- 
+      (suitab.raster.current - min_) / (max_ - min_)
+    
+    suitab.raster.future <- 
+      (suitab.raster.future - min_) / (max_ - min_)
+    
+    message("   The final environmental suitability was rescaled between 0 and",
+            "1. To disable, set argument rescale = FALSE") 
+  } else {
+    max_ <- NA
+    min_ <- NA
   }
+
   stack.lengths <- c(nrow(env.df.current), nrow(env.df.future))
-  
-  if(plot){
-    message(" - Ploting response and suitability\n")
-    
-    op <- par(no.readonly = TRUE)
-    par(mar = c(5.1, 4.1, 4.1, 2.1))
-    layout(matrix(nrow = 2, ncol = 2, c(1, 1, 2, 3 )))
-    
-    plotResponse(x = raster.stack.current, approach = "bca",
-                 parameters = list(bca = between.object,
-                                   means = means,
-                                   sds = sds,
-                                   stack.lengths = stack.lengths), no.plot.reset = T)
-    
-    image(suitab.raster.current, axes = T, ann = F, asp = 1,
-          las = 1, col = rev(terrain.colors(12)))
-    
-    legend(title = "Pixel\nsuitability", "right", inset = c(-0.14, 0),
-           legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
-           fill = terrain.colors(6), bty = "n")
-    title("Current environmental suitability of the virtual species")
-    
-    image(suitab.raster.future, axes = T, ann = F, asp = 1,
-          las = 1, col = rev(terrain.colors(12)))
-    legend(title = "Pixel\nsuitability", "right", inset = c(-0.14, 0),
-           legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
-           fill = terrain.colors(6), bty = "n")
-    title("Future environmental suitability of the virtual species")
-    
-    par(op)
-  }
   
   results <- list(approach = "bca",
                   details = list(variables = sel.vars,
                                  bca = between.object,
                                  rescale = rescale,
-                                 axes = c(1, 2), # Will be changed later if the choice of axes is implemented
+                                 axes = c(1, 2), 
                                  means = means,
                                  sds = sds,
+                                 max_prob_rescale = max_,
+                                 min_prob_rescale = min_,
                                  stack.lengths = stack.lengths),
-                  suitab.raster.current = suitab.raster.current,
-                  suitab.raster.future = suitab.raster.future)
+                  suitab.raster.current = wrap(suitab.raster.current,
+                                               proxy = FALSE),
+                  suitab.raster.future = wrap(suitab.raster.future,
+                                              proxy = FALSE))
   class(results) <- append("virtualspecies", class(results))
+  
+  if(plot){
+    message(" - Ploting response and suitability\n")
+    
+    op <- graphics::par(no.readonly = TRUE)
+    # par(mar = c(5.1, 4.1, 4.1, 2.1))
+    # layout(matrix(nrow = 2, ncol = 2, c(1, 1, 2, 3 )))
+    
+    # plotResponse(results, no.plot.reset = T)
+    
+    stac <- c(suitab.raster.current,
+              suitab.raster.future)
+    names(stac) <- c("Current", "Future")
+    
+    plot(stac,
+         col = viridis::viridis(10))
+    
+    # image(suitab.raster.current, axes = T, ann = F, asp = 1,
+    #       las = 1, col = rev(terrain.colors(12)))
+    # 
+    # legend(title = "Pixel\nsuitability", "right", inset = c(-0.14, 0),
+    #        legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
+    #        fill = terrain.colors(6), bty = "n")
+    # title("Current environmental suitability of the virtual species")
+    # 
+    # image(suitab.raster.future, axes = T, ann = F, asp = 1,
+    #       las = 1, col = rev(terrain.colors(12)))
+    # legend(title = "Pixel\nsuitability", "right", inset = c(-0.14, 0),
+    #        legend = c(1, 0.8, 0.6, 0.4, 0.2, 0),
+    #        fill = terrain.colors(6), bty = "n")
+    # title("Future environmental suitability of the virtual species")
+    
+    graphics::par(op)
+  }
+  
+
   return(results)
 }
